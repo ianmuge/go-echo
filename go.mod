@@ -3,6 +3,7 @@ module go-echo
 go 1.14
 
 require (
+	github.com/brianvoe/gofakeit/v5 v5.9.0
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/joho/godotenv v1.3.0
 	github.com/labstack/echo-contrib v0.9.0

@@ -19,6 +19,7 @@ func main() {
 		log.Fatal("Error loading .env file")
 	}
 	e := echo.New()
+
 	//Middleware and Init
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
@@ -33,7 +34,7 @@ func main() {
 		SigningKey: []byte(handler.Key),
 		Skipper: func(c echo.Context) bool {
 			// Skip authentication for and signup login requests
-			list := []string{"/login","/signup","/"}
+			list := []string{"/login","/signup","/","/init-users","/init-feed"}
 			for _,b :=range list{
 				if c.Path()==b{
 					return true
@@ -57,14 +58,15 @@ func main() {
 		log.Fatal(err)
 	}
 
+
 	// Initialize handler
 	h := &handler.Handler{DB: db}
-
-
-
 	// Routes
 	e.GET("/",h.TestHome)
+	e.GET("/init-users",h.InitUsers)
+	e.GET("/init-feed",h.InitFeed)
 	e.GET("/stream",h.TestStream)
+
 	e.POST("/signup", h.Signup)
 	e.POST("/login", h.Login)
 	e.POST("/follow/:id", h.Follow)
