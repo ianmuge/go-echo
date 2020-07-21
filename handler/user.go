@@ -4,6 +4,7 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/labstack/echo/v4"
 	"go-echo/model"
+	"golang.org/x/crypto/bcrypt"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 	"net/http"
@@ -21,7 +22,11 @@ func (h *Handler) Signup(c echo.Context) (err error) {
 	if u.Email == "" || u.Password == "" {
 		return &echo.HTTPError{Code: http.StatusBadRequest, Message: "invalid email or password"}
 	}
-
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(u.Password), bcrypt.DefaultCost)
+	if err != nil {
+		panic(err)
+	}
+	u.Password=string(hashedPassword)
 	// Save user
 	db := h.DB.Clone()
 	defer db.Close()
@@ -51,16 +56,20 @@ func (h *Handler) Login(c echo.Context) (err error) {
 	if err = c.Bind(u); err != nil {
 		return
 	}
+	password:=u.Password
+	u.Password=""
 
 	// Find user
 	db := h.DB.Clone()
 	defer db.Close()
-	if err = db.DB("twitter").C("users").
-		Find(bson.M{"email": u.Email, "password": u.Password}).One(u); err != nil {
-		if err == mgo.ErrNotFound {
-			return &echo.HTTPError{Code: http.StatusUnauthorized, Message: "invalid email or password"}
+	if err = db.DB("twitter").C("users").Find(bson.M{"email": u.Email}).One(u); err != nil {
+		if err == mgo.ErrNotFound{
+			return &echo.HTTPError{Code: http.StatusUnauthorized, Message: "Invalid email"}
 		}
 		return
+	}
+	if bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password))!=nil{
+		return &echo.HTTPError{Code: http.StatusUnauthorized, Message: "Invalid email or password"}
 	}
 
 	//-----
